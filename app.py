@@ -19,7 +19,7 @@ st.markdown(
         }
 
         /* Maksimalkan ruang kerja container Streamlit */
-    .block-container {
+   .block-container {
             padding-top: 0.2rem!important;
             padding-bottom: 0rem!important;
             padding-left: 1.5rem!important;
@@ -45,7 +45,7 @@ st.markdown(
         }
 
         /* Menaikkan konten utama agar tidak terlalu turun ke bawah */
-    .main.block-container {
+   .main.block-container {
             margin-top: -3.2rem!important;
         }
 
@@ -55,7 +55,7 @@ st.markdown(
         }
 
         /* Container Khusus Grafik: Memaksa area chart naik dan membatasi tinggi maksimum box */
-    .chart-scroll-container {
+   .chart-scroll-container {
             max-height: calc(100vh - 170px)!important;
             overflow-y: auto!important;
             overflow-x: hidden!important;
@@ -162,21 +162,21 @@ if uploaded_file is not None:
             min_date = df[kolom_date].min()
             max_date = df[kolom_date].max()
             date_range = st.date_input(
-    "Pilih Rentang Tanggal",
-    value=[min_date, max_date],
-    min_value=min_date,
-    max_value=max_date
-)
+                "Pilih Rentang Tanggal",
+                value=[min_date, max_date],
+                min_value=min_date,
+                max_value=max_date
+            )
 
-# Handle kalau user baru pilih 1 tanggal
-if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
-    start_date, end_date = date_range
-elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
-    start_date = end_date = date_range[0]
-else:
-    start_date = end_date = date_range
+            # Handle kalau user baru pilih 1 tanggal
+            if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+                start_date, end_date = date_range
+            elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
+                start_date = end_date = date_range[0]
+            else:
+                start_date = end_date = date_range
 
-        # ==================== SLICER BEFORE AFTER RENTANG - FIXED ====================
+    # ==================== SLICER BEFORE AFTER RENTANG - FIXED ====================
     before_start, before_end, after_start, after_end = None, None, None, None
     if kolom_date:
         st.markdown("#### 📅 Perbandingan Before vs After")
@@ -206,7 +206,6 @@ else:
                 max_value=max_date,
                 key="before_range"
             )
-            # FIX: Handle kalau user baru pilih 1 tanggal
             if isinstance(before_range, (list, tuple)):
                 if len(before_range) == 2:
                     before_start, before_end = before_range
@@ -223,7 +222,6 @@ else:
                 max_value=max_date,
                 key="after_range"
             )
-            # FIX: Handle kalau user baru pilih 1 tanggal
             if isinstance(after_range, (list, tuple)):
                 if len(after_range) == 2:
                     after_start, after_end = after_range
@@ -231,6 +229,7 @@ else:
                     after_start = after_end = after_range[0]
             else:
                 after_start = after_end = after_range
+
     # ==================== PROSES AKHIR FILTERING DATA ====================
     df_filtered = df.copy()
     if cluster_terpilih!= "Select All":
@@ -296,7 +295,6 @@ else:
         st.markdown("### 📊 Ringkasan Performa Terfilter")
         m_col1, m_col2 = st.columns(2)
 
-        # Pakai agregasi yang dipilih user
         if agg_1 == 'sum':
             val_kpi1 = df_filtered[y_axis_1].sum()
             label_1 = f"Total {y_axis_1}"
@@ -452,7 +450,8 @@ else:
         st.markdown('<div class="chart-scroll-container">', unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
-# ==================== TABEL PERBANDINGAN BEFORE AFTER RENTANG ====================
+
+        # ==================== TABEL PERBANDINGAN BEFORE AFTER RENTANG ====================
         if kolom_date and y_axis_1!= "-- Pilih KPI --" and before_start and before_end and after_start and after_end:
             st.markdown("---")
             st.markdown(f"### 📋 Tabel Perbandingan Before vs After")
@@ -508,7 +507,7 @@ else:
 
                 # Delta KPI 1
                 compare_df[f'Delta_{y_axis_1}'] = compare_df[f'{y_axis_1}_After'] - compare_df[f'{y_axis_1}_Before']
-                # GANTI: %Change jadi Gain dengan formula (after-before)/after
+                # Gain dengan formula (after-before)/after
                 compare_df[f'Gain_{y_axis_1}'] = ((compare_df[f'{y_axis_1}_After'] - compare_df[f'{y_axis_1}_Before']) / compare_df[f'{y_axis_1}_After'].replace(0, pd.NA) * 100).fillna(0)
 
                 # Delta KPI 2
@@ -521,7 +520,7 @@ else:
                     color = 'green' if val > 0 else 'red' if val < 0 else 'gray'
                     return f'color: {color}; font-weight: bold'
 
-                # Apply styling manual - GANTI %Change jadi Gain
+                # Apply styling manual
                 styled_df = compare_df.style.format({
                     f'{y_axis_1}_Before': '{:.2f}',
                     f'{y_axis_1}_After': '{:.2f}',
@@ -544,93 +543,7 @@ else:
                     height=350
                 )
 
-                st.caption(f"*Metode: {agg_1.upper()} untuk {y_axis_1}" + (f", {agg_2.upper()} untuk {y_axis_2}" if has_kpi2 else "") + ". Gain = (After-Before)/After. Count = jumlah sample data. Hijau = naik, Merah = turun")
+                st.caption(f"**Metode: {agg_1.upper()} untuk {y_axis_1}" + (f", {agg_2.upper()} untuk {y_axis_2}" if has_kpi2 else "") + ". Gain = (After-Before)/After. Count = jumlah sample data. Hijau = naik, Merah = turun")
 
-            # Filter data untuk before dan after, tapi tetap pakai filter cluster/mo/band
-            df_before = df.copy()
-            df_after = df.copy()
-
-            # Apply filter yang sama seperti df_filtered kecuali tanggal
-            if cluster_terpilih!= "Select All":
-                df_before = df_before[df_before[kolom_cluster] == cluster_terpilih]
-                df_after = df_after[df_after[kolom_cluster] == cluster_terpilih]
-            if mo_terpilih!= "Select All":
-                df_before = df_before[df_before[kolom_moentity] == mo_terpilih]
-                df_after = df_after[df_after[kolom_moentity] == mo_terpilih]
-            if band_terpilih and "Select All" not in band_terpilih:
-                df_before = df_before[df_before[kolom_band].isin(band_terpilih)]
-                df_after = df_after[df_after[kolom_band].isin(band_terpilih)]
-
-            # Filter rentang tanggal
-            df_before = df_before[(df_before[kolom_date] >= before_start) & (df_before[kolom_date] <= before_end)]
-            df_after = df_after[(df_after[kolom_date] >= after_start) & (df_after[kolom_date] <= after_end)]
-
-            if df_before.empty or df_after.empty:
-                st.warning("⚠ Data kosong di salah satu rentang tanggal. Cek lagi filternya.")
-            else:
-                # Group by sesuai level site/cell
-                group_col = kolom_cluster if is_site_level else kolom_moentity
-
-                # Pakai agregasi yang dipilih user
-                agg_dict = {y_axis_1: agg_1}
-                if has_kpi2:
-                    agg_dict[y_axis_2] = agg_2
-
-                before_agg = df_before.groupby(group_col, as_index=False).agg(agg_dict).rename(columns={
-                    y_axis_1: f'{y_axis_1}_Before',
-                    **({y_axis_2: f'{y_axis_2}_Before'} if has_kpi2 else {})
-                })
-
-                after_agg = df_after.groupby(group_col, as_index=False).agg(agg_dict).rename(columns={
-                    y_axis_1: f'{y_axis_1}_After',
-                    **({y_axis_2: f'{y_axis_2}_After'} if has_kpi2 else {})
-                })
-
-                # Merge dan hitung delta
-                compare_df = pd.merge(before_agg, after_agg, on=group_col, how='outer').fillna(0)
-
-                # Tambah kolom jumlah sample/hari
-                before_count = df_before.groupby(group_col).size().reset_index(name='Count_Before')
-                after_count = df_after.groupby(group_col).size().reset_index(name='Count_After')
-                compare_df = compare_df.merge(before_count, on=group_col, how='left').merge(after_count, on=group_col, how='left')
-
-                # Delta KPI 1
-                compare_df[f'Delta_{y_axis_1}'] = compare_df[f'{y_axis_1}_After'] - compare_df[f'{y_axis_1}_Before']
-                compare_df[f'%Change_{y_axis_1}'] = ((compare_df[f'{y_axis_1}_After'] - compare_df[f'{y_axis_1}_Before']) / compare_df[f'{y_axis_1}_Before'].replace(0, pd.NA) * 100).fillna(0)
-
-                # Delta KPI 2
-                if has_kpi2:
-                    compare_df[f'Delta_{y_axis_2}'] = compare_df[f'{y_axis_2}_After'] - compare_df[f'{y_axis_2}_Before']
-                    compare_df[f'%Change_{y_axis_2}'] = ((compare_df[f'{y_axis_2}_After'] - compare_df[f'{y_axis_2}_Before']) / compare_df[f'{y_axis_2}_Before'].replace(0, pd.NA) * 100).fillna(0)
-
-                # Fungsi warna manual tanpa matplotlib
-                def color_delta(val):
-                    color = 'green' if val > 0 else 'red' if val < 0 else 'gray'
-                    return f'color: {color}; font-weight: bold'
-
-                # Apply styling manual
-                styled_df = compare_df.style.format({
-                    f'{y_axis_1}_Before': '{:.2f}',
-                    f'{y_axis_1}_After': '{:.2f}',
-                    f'Delta_{y_axis_1}': '{:+.2f}',
-                    f'%Change_{y_axis_1}': '{:+.1f}%',
-                    **({
-                        f'{y_axis_2}_Before': '{:.2f}',
-                        f'{y_axis_2}_After': '{:.2f}',
-                        f'Delta_{y_axis_2}': '{:+.2f}',
-                        f'%Change_{y_axis_2}': '{:+.1f}%'
-                    } if has_kpi2 else {})
-                }).map(color_delta, subset=[f'Delta_{y_axis_1}', f'%Change_{y_axis_1}'])
-
-                if has_kpi2:
-    styled_df = styled_df.map(color_delta, subset=[f'Delta_{y_axis_2}', f'%Change_{y_axis_2}'])
-
-    st.dataframe(
-        styled_df,
-        use_container_width=True,
-        height=350
-    )
-
-    st.caption(f"**Metode: {agg_1.upper()} untuk {y_axis_1}" + (f", {agg_2.upper()} untuk {y_axis_2}" if has_kpi2 else "") + ". Count = jumlah sample data. Hijau = naik, Merah = ")
 else:
     st.info("👋 Dashboard Siap! Silakan unggah file Anda di sidebar sebelah kiri.")
