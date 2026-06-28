@@ -161,12 +161,20 @@ if uploaded_file is not None:
         if kolom_date:
             min_date = df[kolom_date].min()
             max_date = df[kolom_date].max()
-            start_date, end_date = st.date_input(
-                "Rentang Tanggal Utama",
-                value=[min_date, max_date],
-                min_value=min_date,
-                max_value=max_date
-            )
+            date_range = st.date_input(
+    "Pilih Rentang Tanggal",
+    value=[min_date, max_date],
+    min_value=min_date,
+    max_value=max_date
+)
+
+# Handle kalau user baru pilih 1 tanggal
+if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+    start_date, end_date = date_range
+elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
+    start_date = end_date = date_range[0]
+else:
+    start_date = end_date = date_range # single date object
         else:
             start_date, end_date = None, None
 
