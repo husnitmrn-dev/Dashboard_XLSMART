@@ -175,10 +175,6 @@ elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
     start_date = end_date = date_range[0]
 else:
     start_date = end_date = date_range
-else:
-    start_date = end_date = date_range # single date object
-        else:
-            start_date, end_date = None, None
 
         # ==================== SLICER BEFORE AFTER RENTANG - FIXED ====================
     before_start, before_end, after_start, after_end = None, None, None, None
