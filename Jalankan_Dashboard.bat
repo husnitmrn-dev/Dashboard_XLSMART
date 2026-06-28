@@ -1,0 +1,13 @@
+@echo off
+title Menjalankan Dashboard KPI...
+echo Mengakses direktori proyek...
+D:
+cd "D:\XLSMART HWI CCSI\DASHBOARD KPI ONLINE"
+
+echo Memastikan library terbaru sudah terinstal...
+pip install -r requirements.txt
+
+echo Memulai server Streamlit...
+streamlit run app.py
+
+pause
