@@ -623,15 +623,14 @@ else:
                 }).map(color_delta, subset=[f'Delta_{y_axis_1}', f'%Change_{y_axis_1}'])
 
                 if has_kpi2:
-                    styled_df = styled_df.map(color_delta, subset=[f'Delta_{y_axis_2}', f'%Change_{y_axis_2}'])
+    styled_df = styled_df.map(color_delta, subset=[f'Delta_{y_axis_2}', f'%Change_{y_axis_2}'])
 
-                st.dataframe(
-                    styled_df,
-                    use_container_width=True,
-                    height=350
-                )
+    st.dataframe(
+        styled_df,
+        use_container_width=True,
+        height=350
+    )
 
-                st.caption(f"*Metode: {agg_1.upper()} untuk {y_axis_1}" + (f", {agg_2.upper()} untuk {y_axis_2}" if has_kpi2 else "") + ". Count = jumlah sample data. Hijau = naik, Merah = turun")
-
+    st.caption(f"**Metode: {agg_1.upper()} untuk {y_axis_1}" + (f", {agg_2.upper()} untuk {y_axis_2}" if has_kpi2 else "") + ". Count = jumlah sample data. Hijau = naik, Merah = ")
 else:
     st.info("👋 Dashboard Siap! Silakan unggah file Anda di sidebar sebelah kiri.")
