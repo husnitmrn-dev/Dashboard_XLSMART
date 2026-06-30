@@ -19,7 +19,7 @@ st.markdown(
         }
 
         /* Maksimalkan ruang kerja container Streamlit */
- .block-container {
+.block-container {
             padding-top: 0.2rem!important;
             padding-bottom: 0rem!important;
             padding-left: 1.5rem!important;
@@ -45,7 +45,7 @@ st.markdown(
         }
 
         /* Menaikkan konten utama agar tidak terlalu turun ke bawah */
- .main.block-container {
+.main.block-container {
             margin-top: -3.2rem!important;
         }
 
@@ -55,7 +55,7 @@ st.markdown(
         }
 
         /* Container Khusus Grafik: Memaksa area chart naik dan membatasi tinggi maksimum box */
- .chart-scroll-container {
+.chart-scroll-container {
             max-height: calc(100vh - 170px)!important;
             overflow-y: auto!important;
             overflow-x: hidden!important;
@@ -99,13 +99,16 @@ if uploaded_file is not None:
     kolom_cluster = "(4G eNodeB FDD)MSC" if "(4G eNodeB FDD)MSC" in all_columns else all_columns[0]
     kolom_moentity = next((c for c in all_columns if "moentity" in c.lower() or "cellname" in c.lower()), None)
     kolom_date = next((c for c in all_columns if "date" in c.lower() or "tanggal" in c.lower()), None)
-    kolom_operator = next((c for c in all_columns if "operator" in c.lower() or c.lower() == "op" or "vendor" in c.lower()), None)
+
+    # DETEKSI KOLOM OPERATOR - LEBIH FLEKSIBEL
+    kolom_operator = next((c for c in all_columns if c.strip().lower() in ["operator", "op", "vendor", "opr", "provider"]), None)
 
     if kolom_date:
         df[kolom_date] = pd.to_datetime(df[kolom_date]).dt.date
 
+    # JANGAN DI-LOWER BIAR NILAI ASLI XL & SF KEBAWA
     if kolom_operator:
-        df[kolom_operator] = df[kolom_operator].astype(str).str.lower().str.strip()
+        df[kolom_operator] = df[kolom_operator].astype(str).str.strip()
 
     # ==================== LOGIKA INTERKONEKSI SLICER ====================
     if "cluster_sel" not in st.session_state: st.session_state.cluster_sel = "Select All"
@@ -169,7 +172,7 @@ if uploaded_file is not None:
             band_terpilih = ["Select All"]
 
     with col4:
-        # SLICER OPERATOR BARU
+        # SLICER OPERATOR - FIXED
         if kolom_operator:
             df_for_op = df.copy()
             if st.session_state.cluster_sel!= "Select All":
@@ -183,9 +186,8 @@ if uploaded_file is not None:
             idx_op = list_op_unik.index(st.session_state.operator_sel) if st.session_state.operator_sel in list_op_unik else 0
             operator_terpilih = st.selectbox("Operator", options=list_op_unik, index=idx_op, key="operator_sel")
         else:
-            # Kalau ga ada kolom operator, bikin manual xl & sf
-            list_op_unik = ["Select All", "xl", "sf"]
-            operator_terpilih = st.selectbox("Operator", options=list_op_unik, key="operator_sel")
+            operator_terpilih = "Select All"
+            st.selectbox("Operator", options=["Kolom tidak ditemukan"], disabled=True)
 
     with col5:
         if kolom_date:
