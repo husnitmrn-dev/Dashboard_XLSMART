@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import datetime
 
 # 1. Konfigurasi Halaman agar Luas Maksimal
-st.set_page_config(page_title="KPI Dashboard Modern", layout="wide")
+st.set_page_config(page_title="KPI Dashboard XLSMART", layout="wide")
 
 # --- CSS SAKTI V5: Menyeimbangkan Posisi Vertikal Grafik Agar Naik & Pas di Layar ---
 st.markdown(
@@ -67,7 +67,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("📈 Dashboard KPI Dan Analisis Cluster")
+st.title("📈 Dashboard And KPI Analisis")
 
 # 2. Fitur Upload File di Sidebar
 st.sidebar.header("📂 Sumber Data")
