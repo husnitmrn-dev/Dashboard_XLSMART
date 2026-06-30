@@ -19,7 +19,7 @@ st.markdown(
         }
 
         /* Maksimalkan ruang kerja container Streamlit */
-   .block-container {
+  .block-container {
             padding-top: 0.2rem!important;
             padding-bottom: 0rem!important;
             padding-left: 1.5rem!important;
@@ -45,7 +45,7 @@ st.markdown(
         }
 
         /* Menaikkan konten utama agar tidak terlalu turun ke bawah */
-   .main.block-container {
+  .main.block-container {
             margin-top: -3.2rem!important;
         }
 
@@ -55,7 +55,7 @@ st.markdown(
         }
 
         /* Container Khusus Grafik: Memaksa area chart naik dan membatasi tinggi maksimum box */
-   .chart-scroll-container {
+  .chart-scroll-container {
             max-height: calc(100vh - 170px)!important;
             overflow-y: auto!important;
             overflow-x: hidden!important;
@@ -380,6 +380,10 @@ if uploaded_file is not None:
 
         df_aggregated = df_aggregated.sort_values(by=x_axis)
 
+        # UBAH FORMAT TANGGAL JADI STRING d/mm/yyyy BIAR DISCRETE
+        if kolom_date and x_axis == kolom_date:
+            df_aggregated[x_axis] = pd.to_datetime(df_aggregated[x_axis]).dt.strftime('%-d/%m/%Y')
+
         # Hitung Nilai Sumbu Y Maksimal
         max_val_1 = df_aggregated[y_axis_1].max() if not df_aggregated.empty else 100
         max_val_2 = df_aggregated[y_axis_2].max() if (has_kpi2 and not df_aggregated.empty) else 0
@@ -437,15 +441,27 @@ if uploaded_file is not None:
 
         # Garis Target
         if use_threshold_1 and kolom_date and start_date and end_date:
-            fig.add_trace(go.Scatter(x=[start_date, end_date], y=[threshold_val_1, threshold_val_1], name=f"Target {y_axis_1}", mode="lines", line=dict(color="red", width=2.5, dash="dash")), secondary_y=False)
+            start_str = start_date.strftime('%-d/%m/%Y')
+            end_str = end_date.strftime('%-d/%m/%Y')
+            fig.add_trace(go.Scatter(x=[start_str, end_str], y=[threshold_val_1, threshold_val_1], name=f"Target {y_axis_1}", mode="lines", line=dict(color="red", width=2.5, dash="dash")), secondary_y=False)
 
         if use_threshold_2 and kolom_date and start_date and end_date:
-            fig.add_trace(go.Scatter(x=[start_date, end_date], y=[threshold_val_2, threshold_val_2], name=f"Target {y_axis_2}", mode="lines", line=dict(color="purple", width=2.5, dash="dot")), secondary_y=True)
+            start_str = start_date.strftime('%-d/%m/%Y')
+            end_str = end_date.strftime('%-d/%m/%Y')
+            fig.add_trace(go.Scatter(x=[start_str, end_str], y=[threshold_val_2, threshold_val_2], name=f"Target {y_axis_2}", mode="lines", line=dict(color="purple", width=2.5, dash="dot")), secondary_y=True)
 
         judul_level = "Site Level" if is_site_level else "Cell Level"
         judul_chart = f"Analisis Grafik KPI ({judul_level}): {y_axis_1} [{agg_1.upper()}]" + (f" vs {y_axis_2} [{agg_2.upper()}]" if has_kpi2 else "")
 
-        fig.update_layout(title_text=judul_chart, hovermode="x unified", height=680, margin=dict(l=110, r=65, t=110, b=260), showlegend=True, legend=dict(orientation="h", yanchor="top", y=-0.35, xanchor="center", x=0.5))
+        fig.update_layout(
+            title_text=judul_chart,
+            hovermode="x unified",
+            height=680,
+            margin=dict(l=110, r=65, t=110, b=260),
+            showlegend=True,
+            legend=dict(orientation="h", yanchor="top", y=-0.35, xanchor="center", x=0.5),
+            xaxis=dict(type='category') # <-- INI KUNCI BIAR TANGGAL DISCRETE
+        )
 
         st.markdown('<div class="chart-scroll-container">', unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
@@ -455,7 +471,7 @@ if uploaded_file is not None:
         if kolom_date and y_axis_1!= "-- Pilih KPI --" and before_start and before_end and after_start and after_end:
             st.markdown("---")
             st.markdown(f"### 📋 Tabel Perbandingan Before vs After")
-            st.caption(f"Before: {before_start} s/d {before_end} | After: {after_start} s/d {after_end}")
+            st.caption(f"Before: {before_start.strftime('%-d/%m/%Y')} s/d {before_end.strftime('%-d/%m/%Y')} | After: {after_start.strftime('%-d/%m/%Y')} s/d {after_end.strftime('%-d/%m/%Y')}")
 
             # Filter data untuk before dan after, tapi tetap pakai filter cluster/mo/band
             df_before = df.copy()
