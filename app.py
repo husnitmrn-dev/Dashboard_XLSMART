@@ -8,7 +8,7 @@ import datetime
 # 1. Konfigurasi Halaman agar Luas Maksimal
 st.set_page_config(page_title="KPI Dashboard XLSMART", layout="wide")
 
-# --- CSS SAKTI V5: Menyeimbangkan Posisi Vertikal Grafik Agar Naik & Pas di Layar ---
+# --- CSS SAKTI V6: Title tengah + Slicer kecil ---
 st.markdown(
     """
     <style>
@@ -32,11 +32,19 @@ st.markdown(
             gap: 0.15rem!important;
         }
 
+        /* TITLE DI TENGAH + LEBIH BESAR */
         h1 {
             padding-top: 0rem!important;
-            padding-bottom: 0.1rem!important;
+            padding-bottom: 0.2rem!important;
             margin-bottom: 0rem!important;
-            font-size: 26px!important;
+            font-size: 32px!important;
+            text-align: center!important;
+        }
+
+        /* TEKS SLICER LEBIH KECIL */
+        h3 {
+            font-size: 18px!important;
+            margin-bottom: 0.3rem!important;
         }
 
         header[data-testid="stHeader"] {
@@ -414,9 +422,9 @@ if uploaded_file is not None:
 
         df_aggregated = df_aggregated.sort_values(by=x_axis)
 
-        # UBAH FORMAT TANGGAL JADI STRING d/mm/yyyy BIAR DISCRETE
+        # UBAH FORMAT TANGGAL JADI STRING d/mm/yyyy BIAR DISCRETE - FIX WINDOWS
         if kolom_date and x_axis == kolom_date:
-            df_aggregated[x_axis] = pd.to_datetime(df_aggregated[x_axis]).dt.strftime('%-d/%m/%Y')
+            df_aggregated[x_axis] = pd.to_datetime(df_aggregated[x_axis]).apply(lambda d: f"{d.day}/{d.month}/{d.year}")
 
         # Hitung Nilai Sumbu Y Maksimal
         max_val_1 = df_aggregated[y_axis_1].max() if not df_aggregated.empty else 100
@@ -473,15 +481,15 @@ if uploaded_file is not None:
                     trace2 = add_dynamic_trace(df_c, y_axis_2, f"{item} ({y_axis_2})", type_chart_2, is_secondary=True, rgb_base=rgb_c2)
                     fig.add_trace(trace2, secondary_y=True)
 
-        # Garis Target
+        # Garis Target - FIX WINDOWS
         if use_threshold_1 and kolom_date and start_date and end_date:
-            start_str = start_date.strftime('%-d/%m/%Y')
-            end_str = end_date.strftime('%-d/%m/%Y')
+            start_str = f"{start_date.day}/{start_date.month}/{start_date.year}"
+            end_str = f"{end_date.day}/{end_date.month}/{end_date.year}"
             fig.add_trace(go.Scatter(x=[start_str, end_str], y=[threshold_val_1, threshold_val_1], name=f"Target {y_axis_1}", mode="lines", line=dict(color="red", width=2.5, dash="dash")), secondary_y=False)
 
         if use_threshold_2 and kolom_date and start_date and end_date:
-            start_str = start_date.strftime('%-d/%m/%Y')
-            end_str = end_date.strftime('%-d/%m/%Y')
+            start_str = f"{start_date.day}/{start_date.month}/{start_date.year}"
+            end_str = f"{end_date.day}/{end_date.month}/{end_date.year}"
             fig.add_trace(go.Scatter(x=[start_str, end_str], y=[threshold_val_2, threshold_val_2], name=f"Target {y_axis_2}", mode="lines", line=dict(color="purple", width=2.5, dash="dot")), secondary_y=True)
 
         judul_level = "Site Level" if is_site_level else "Cell Level"
@@ -505,7 +513,7 @@ if uploaded_file is not None:
         if kolom_date and y_axis_1!= "-- Pilih KPI --" and before_start and before_end and after_start and after_end:
             st.markdown("---")
             st.markdown(f"### 📋 Tabel Perbandingan Before vs After")
-            st.caption(f"Before: {before_start.strftime('%-d/%m/%Y')} s/d {before_end.strftime('%-d/%m/%Y')} | After: {after_start.strftime('%-d/%m/%Y')} s/d {after_end.strftime('%-d/%m/%Y')}")
+            st.caption(f"Before: {before_start.day}/{before_start.month}/{before_start.year} s/d {before_end.day}/{before_end.month}/{before_end.year} | After: {after_start.day}/{after_start.month}/{after_start.year} s/d {after_end.day}/{after_end.month}/{after_end.year}")
 
             # Filter data untuk before dan after, tapi tetap pakai filter cluster/mo/band
             df_before = df.copy()
