@@ -292,7 +292,7 @@ if uploaded_file is not None:
 
     # ==================== INFO RINGKASAN PERFORMA (2 CARDS) ====================
     if not df_filtered.empty and y_axis_1!= "-- Pilih KPI --":
-        st.markdown("### 📊 Ringkasan Performa Terfilter")
+        st.markdown("### 📊 Summary KPI ")
         m_col1, m_col2 = st.columns(2)
 
         if agg_1 == 'sum':
