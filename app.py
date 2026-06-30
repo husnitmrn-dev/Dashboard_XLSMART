@@ -19,7 +19,7 @@ st.markdown(
         }
 
         /* Maksimalkan ruang kerja container Streamlit */
-  .block-container {
+ .block-container {
             padding-top: 0.2rem!important;
             padding-bottom: 0rem!important;
             padding-left: 1.5rem!important;
@@ -45,7 +45,7 @@ st.markdown(
         }
 
         /* Menaikkan konten utama agar tidak terlalu turun ke bawah */
-  .main.block-container {
+ .main.block-container {
             margin-top: -3.2rem!important;
         }
 
@@ -55,7 +55,7 @@ st.markdown(
         }
 
         /* Container Khusus Grafik: Memaksa area chart naik dan membatasi tinggi maksimum box */
-  .chart-scroll-container {
+ .chart-scroll-container {
             max-height: calc(100vh - 170px)!important;
             overflow-y: auto!important;
             overflow-x: hidden!important;
@@ -99,17 +99,22 @@ if uploaded_file is not None:
     kolom_cluster = "(4G eNodeB FDD)MSC" if "(4G eNodeB FDD)MSC" in all_columns else all_columns[0]
     kolom_moentity = next((c for c in all_columns if "moentity" in c.lower() or "cellname" in c.lower()), None)
     kolom_date = next((c for c in all_columns if "date" in c.lower() or "tanggal" in c.lower()), None)
+    kolom_operator = next((c for c in all_columns if "operator" in c.lower() or c.lower() == "op" or "vendor" in c.lower()), None)
 
     if kolom_date:
         df[kolom_date] = pd.to_datetime(df[kolom_date]).dt.date
+
+    if kolom_operator:
+        df[kolom_operator] = df[kolom_operator].astype(str).str.lower().str.strip()
 
     # ==================== LOGIKA INTERKONEKSI SLICER ====================
     if "cluster_sel" not in st.session_state: st.session_state.cluster_sel = "Select All"
     if "mo_sel" not in st.session_state: st.session_state.mo_sel = "Select All"
     if "band_sel" not in st.session_state: st.session_state.band_sel = ["Select All"]
+    if "operator_sel" not in st.session_state: st.session_state.operator_sel = "Select All"
 
     st.markdown("### 🎛 Slicers (Filter Data)")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         df_for_cluster = df.copy()
@@ -117,6 +122,8 @@ if uploaded_file is not None:
             df_for_cluster = df_for_cluster[df_for_cluster[kolom_moentity] == st.session_state.mo_sel]
         if st.session_state.band_sel and "Select All" not in st.session_state.band_sel:
             df_for_cluster = df_for_cluster[df_for_cluster[kolom_band].isin(st.session_state.band_sel)]
+        if kolom_operator and st.session_state.operator_sel!= "Select All":
+            df_for_cluster = df_for_cluster[df_for_cluster[kolom_operator] == st.session_state.operator_sel]
 
         list_cluster_unik = ["Select All"] + sorted(df_for_cluster[kolom_cluster].dropna().unique().tolist())
         idx_cluster = list_cluster_unik.index(st.session_state.cluster_sel) if st.session_state.cluster_sel in list_cluster_unik else 0
@@ -129,6 +136,8 @@ if uploaded_file is not None:
                 df_for_mo = df_for_mo[df_for_mo[kolom_cluster] == st.session_state.cluster_sel]
             if st.session_state.band_sel and "Select All" not in st.session_state.band_sel:
                 df_for_mo = df_for_mo[df_for_mo[kolom_band].isin(st.session_state.band_sel)]
+            if kolom_operator and st.session_state.operator_sel!= "Select All":
+                df_for_mo = df_for_mo[df_for_mo[kolom_operator] == st.session_state.operator_sel]
 
             list_mo_unik = ["Select All"] + sorted(df_for_mo[kolom_moentity].dropna().unique().tolist())
             idx_mo = list_mo_unik.index(st.session_state.mo_sel) if st.session_state.mo_sel in list_mo_unik else 0
@@ -143,6 +152,8 @@ if uploaded_file is not None:
                 df_for_band = df_for_band[df_for_band[kolom_cluster] == st.session_state.cluster_sel]
             if st.session_state.mo_sel!= "Select All":
                 df_for_band = df_for_band[df_for_band[kolom_moentity] == st.session_state.mo_sel]
+            if kolom_operator and st.session_state.operator_sel!= "Select All":
+                df_for_band = df_for_band[df_for_band[kolom_operator] == st.session_state.operator_sel]
 
             list_band_unik = ["Select All"] + sorted([b for b in df_for_band[kolom_band].unique() if b!= '0'])
 
@@ -158,6 +169,25 @@ if uploaded_file is not None:
             band_terpilih = ["Select All"]
 
     with col4:
+        # SLICER OPERATOR BARU
+        if kolom_operator:
+            df_for_op = df.copy()
+            if st.session_state.cluster_sel!= "Select All":
+                df_for_op = df_for_op[df_for_op[kolom_cluster] == st.session_state.cluster_sel]
+            if st.session_state.mo_sel!= "Select All":
+                df_for_op = df_for_op[df_for_op[kolom_moentity] == st.session_state.mo_sel]
+            if st.session_state.band_sel and "Select All" not in st.session_state.band_sel:
+                df_for_op = df_for_op[df_for_op[kolom_band].isin(st.session_state.band_sel)]
+
+            list_op_unik = ["Select All"] + sorted(df_for_op[kolom_operator].dropna().unique().tolist())
+            idx_op = list_op_unik.index(st.session_state.operator_sel) if st.session_state.operator_sel in list_op_unik else 0
+            operator_terpilih = st.selectbox("Operator", options=list_op_unik, index=idx_op, key="operator_sel")
+        else:
+            # Kalau ga ada kolom operator, bikin manual xl & sf
+            list_op_unik = ["Select All", "xl", "sf"]
+            operator_terpilih = st.selectbox("Operator", options=list_op_unik, key="operator_sel")
+
+    with col5:
         if kolom_date:
             min_date = df[kolom_date].min()
             max_date = df[kolom_date].max()
@@ -238,6 +268,8 @@ if uploaded_file is not None:
         df_filtered = df_filtered[df_filtered[kolom_moentity] == mo_terpilih]
     if band_terpilih and "Select All" not in band_terpilih:
         df_filtered = df_filtered[df_filtered[kolom_band].isin(band_terpilih)]
+    if kolom_operator and operator_terpilih!= "Select All":
+        df_filtered = df_filtered[df_filtered[kolom_operator] == operator_terpilih]
     if kolom_date and start_date and end_date:
         df_filtered = df_filtered[(df_filtered[kolom_date] >= start_date) & (df_filtered[kolom_date] <= end_date)]
 
@@ -487,6 +519,9 @@ if uploaded_file is not None:
             if band_terpilih and "Select All" not in band_terpilih:
                 df_before = df_before[df_before[kolom_band].isin(band_terpilih)]
                 df_after = df_after[df_after[kolom_band].isin(band_terpilih)]
+            if kolom_operator and operator_terpilih!= "Select All":
+                df_before = df_before[df_before[kolom_operator] == operator_terpilih]
+                df_after = df_after[df_after[kolom_operator] == operator_terpilih]
 
             # Filter rentang tanggal
             df_before = df_before[(df_before[kolom_date] >= before_start) & (df_before[kolom_date] <= before_end)]
