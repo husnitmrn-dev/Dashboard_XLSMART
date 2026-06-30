@@ -108,7 +108,7 @@ if uploaded_file is not None:
     kolom_moentity = next((c for c in all_columns if "moentity" in c.lower() or "cellname" in c.lower()), None)
     kolom_date = next((c for c in all_columns if "date" in c.lower() or "tanggal" in c.lower()), None)
 
-    # DETEKSI KOLOM OPERATOR - LEBIH FLEKSIBEL
+    # DETEKSI KOLOM OPERATOR - FLEKSIBEL
     kolom_operator = next((c for c in all_columns if c.strip().lower() in ["operator", "op", "vendor", "opr", "provider"]), None)
 
     if kolom_date:
@@ -180,7 +180,7 @@ if uploaded_file is not None:
             band_terpilih = ["Select All"]
 
     with col4:
-        # SLICER OPERATOR - FIXED
+        # SLICER OPERATOR
         if kolom_operator:
             df_for_op = df.copy()
             if st.session_state.cluster_sel!= "Select All":
@@ -216,7 +216,7 @@ if uploaded_file is not None:
             else:
                 start_date = end_date = date_range
 
-    # ==================== SLICER BEFORE AFTER RENTANG - FIXED ====================
+    # ==================== SLICER BEFORE AFTER RENTANG ====================
     before_start, before_end, after_start, after_end = None, None, None, None
     if kolom_date:
         st.markdown("#### 📅 Summary Before vs After")
@@ -328,6 +328,11 @@ if uploaded_file is not None:
 
     type_chart_2 = st.sidebar.radio("Tipe Grafik KPI 2:", ["Bar", "Line", "Area"], key="chart2")
 
+    # CHECKBOX SPLIT OPERATOR
+    split_by_operator = False
+    if kolom_operator:
+        split_by_operator = st.sidebar.checkbox("Split Chart by Operator", value=False)
+
     # KONTROL TARGET LINE KPI 2
     use_threshold_2 = st.sidebar.checkbox("Aktifkan Garis Target KPI 2") if has_kpi2 else False
     threshold_val_2 = st.sidebar.number_input("Nilai Target KPI 2:", value=95.0 if "per" in str(y_axis_2).lower() or "%" in str(y_axis_2) else 0.0, step=1.0) if use_threshold_2 else None
@@ -384,14 +389,27 @@ if uploaded_file is not None:
 
         is_site_level = (mo_terpilih == "Select All")
 
+        # LOGIKA SPLIT OPERATOR
+        do_split_op = split_by_operator and kolom_operator and operator_terpilih == "Select All"
+
         if is_site_level:
-            cols_to_group = [x_axis, kolom_cluster]
-            item_aktif = sorted(df_filtered[kolom_cluster].dropna().unique().tolist())
-            kolom_label = kolom_cluster
+            if do_split_op:
+                cols_to_group = [x_axis, kolom_cluster, kolom_operator]
+                kolom_label = kolom_cluster
+                split_label = kolom_operator
+            else:
+                cols_to_group = [x_axis, kolom_cluster]
+                kolom_label = kolom_cluster
+                split_label = None
         else:
-            cols_to_group = [x_axis, kolom_moentity]
-            item_aktif = [mo_terpilih]
-            kolom_label = kolom_moentity
+            if do_split_op:
+                cols_to_group = [x_axis, kolom_moentity, kolom_operator]
+                kolom_label = kolom_moentity
+                split_label = kolom_operator
+            else:
+                cols_to_group = [x_axis, kolom_moentity]
+                kolom_label = kolom_moentity
+                split_label = None
 
         # Agregasi data pakai metode yang dipilih user
         agg_dict = {y_axis_1: agg_1}
@@ -404,14 +422,30 @@ if uploaded_file is not None:
         if kolom_date and x_axis == kolom_date and start_date and end_date:
             all_dates = pd.date_range(start=start_date, end=end_date).date
             reindexed_frames = []
-            for item in item_aktif:
-                df_item = df_aggregated[df_aggregated[kolom_label] == item].copy()
-                df_item = df_item.set_index(x_axis)
-                df_item = df_item.reindex(all_dates)
-                df_item.index.name = x_axis
-                df_item = df_item.reset_index()
-                df_item[kolom_label] = item
-                reindexed_frames.append(df_item)
+
+            if do_split_op:
+                item_aktif_cluster = sorted(df_filtered[kolom_label].dropna().unique().tolist())
+                item_aktif_op = sorted(df_filtered[kolom_operator].dropna().unique().tolist())
+                for item in item_aktif_cluster:
+                    for op in item_aktif_op:
+                        df_item = df_aggregated[(df_aggregated[kolom_label] == item) & (df_aggregated[kolom_operator] == op)].copy()
+                        df_item = df_item.set_index(x_axis)
+                        df_item = df_item.reindex(all_dates)
+                        df_item.index.name = x_axis
+                        df_item = df_item.reset_index()
+                        df_item[kolom_label] = item
+                        df_item[kolom_operator] = op
+                        reindexed_frames.append(df_item)
+            else:
+                item_aktif = sorted(df_aggregated[kolom_label].dropna().unique().tolist())
+                for item in item_aktif:
+                    df_item = df_aggregated[df_aggregated[kolom_label] == item].copy()
+                    df_item = df_item.set_index(x_axis)
+                    df_item = df_item.reindex(all_dates)
+                    df_item.index.name = x_axis
+                    df_item = df_item.reset_index()
+                    df_item[kolom_label] = item
+                    reindexed_frames.append(df_item)
 
             if reindexed_frames:
                 df_aggregated = pd.concat(reindexed_frames, ignore_index=True)
@@ -422,9 +456,9 @@ if uploaded_file is not None:
 
         df_aggregated = df_aggregated.sort_values(by=x_axis)
 
-        # UBAH FORMAT TANGGAL JADI STRING d/mm/yyyy BIAR DISCRETE - FIX WINDOWS
+        # UBAH FORMAT TANGGAL JADI STRING d/mm/yyyy BIAR DISCRETE
         if kolom_date and x_axis == kolom_date:
-            df_aggregated[x_axis] = pd.to_datetime(df_aggregated[x_axis]).apply(lambda d: f"{d.day}/{d.month}/{d.year}")
+            df_aggregated[x_axis] = df_aggregated[x_axis].apply(lambda x: f"{x.day}/{x.month}/{x.year}")
 
         # Hitung Nilai Sumbu Y Maksimal
         max_val_1 = df_aggregated[y_axis_1].max() if not df_aggregated.empty else 100
@@ -438,7 +472,17 @@ if uploaded_file is not None:
         palette_kpi1_list = ["31, 119, 180", "44, 160, 44", "148, 103, 189", "214, 39, 40", "158, 218, 229"]
         palette_kpi2_list = ["255, 127, 14", "227, 119, 194", "188, 189, 34", "23, 190, 207", "255, 187, 120"]
 
-        def add_dynamic_trace(df_c, y_col, name_legend, chart_type, is_secondary, rgb_base):
+        # WARNA KHUSUS XL & SF
+        color_map = {
+            "xl": "0, 32, 96", # Biru tua XL
+            "sf": "227, 6, 19", # Merah SF
+        }
+
+        def add_dynamic_trace(df_c, y_col, name_legend, chart_type, is_secondary, rgb_base, op_name=None):
+            # Override warna kalau operator XL atau SF
+            if op_name and op_name.lower() in color_map:
+                rgb_base = color_map[op_name.lower()]
+
             if chart_type == "Line":
                 return go.Scatter(
                     x=df_c[x_axis], y=df_c[y_col], name=name_legend, mode='lines',
@@ -464,24 +508,50 @@ if uploaded_file is not None:
                     showlegend=True
                 )
 
-        # Render KPI 1
-        for i, item in enumerate(item_aktif):
-            df_c = df_aggregated[df_aggregated[kolom_label] == item]
-            if not df_c.empty:
-                rgb_c1 = palette_kpi1_list[i % len(palette_kpi1_list)]
-                trace1 = add_dynamic_trace(df_c, y_axis_1, f"{item}", type_chart_1, is_secondary=False, rgb_base=rgb_c1)
-                fig.add_trace(trace1, secondary_y=False)
-
-        # Render KPI 2
-        if has_kpi2:
+        # RENDER KPI 1 - DENGAN SPLIT OPERATOR
+        if do_split_op:
+            item_aktif_op = sorted(df_aggregated[kolom_operator].dropna().unique().tolist())
+            item_aktif_cluster = sorted(df_aggregated[kolom_label].dropna().unique().tolist())
+            for i, op in enumerate(item_aktif_op):
+                for j, item in enumerate(item_aktif_cluster):
+                    df_c = df_aggregated[(df_aggregated[kolom_label] == item) & (df_aggregated[kolom_operator] == op)]
+                    if not df_c.empty:
+                        rgb_c1 = palette_kpi1_list[(i+j) % len(palette_kpi1_list)]
+                        name_leg = f"{op}" if is_site_level else f"{item}-{op}"
+                        trace1 = add_dynamic_trace(df_c, y_axis_1, name_leg, type_chart_1, is_secondary=False, rgb_base=rgb_c1, op_name=op)
+                        fig.add_trace(trace1, secondary_y=False)
+        else:
+            item_aktif = sorted(df_aggregated[kolom_label].dropna().unique().tolist())
             for i, item in enumerate(item_aktif):
                 df_c = df_aggregated[df_aggregated[kolom_label] == item]
                 if not df_c.empty:
-                    rgb_c2 = palette_kpi2_list[i % len(palette_kpi2_list)]
-                    trace2 = add_dynamic_trace(df_c, y_axis_2, f"{item} ({y_axis_2})", type_chart_2, is_secondary=True, rgb_base=rgb_c2)
-                    fig.add_trace(trace2, secondary_y=True)
+                    rgb_c1 = palette_kpi1_list[i % len(palette_kpi1_list)]
+                    trace1 = add_dynamic_trace(df_c, y_axis_1, f"{item}", type_chart_1, is_secondary=False, rgb_base=rgb_c1)
+                    fig.add_trace(trace1, secondary_y=False)
 
-        # Garis Target - FIX WINDOWS
+        # RENDER KPI 2 - DENGAN SPLIT OPERATOR
+        if has_kpi2:
+            if do_split_op:
+                item_aktif_op = sorted(df_aggregated[kolom_operator].dropna().unique().tolist())
+                item_aktif_cluster = sorted(df_aggregated[kolom_label].dropna().unique().tolist())
+                for i, op in enumerate(item_aktif_op):
+                    for j, item in enumerate(item_aktif_cluster):
+                        df_c = df_aggregated[(df_aggregated[kolom_label] == item) & (df_aggregated[kolom_operator] == op)]
+                        if not df_c.empty:
+                            rgb_c2 = palette_kpi2_list[(i+j) % len(palette_kpi2_list)]
+                            name_leg = f"{op} ({y_axis_2})" if is_site_level else f"{item}-{op} ({y_axis_2})"
+                            trace2 = add_dynamic_trace(df_c, y_axis_2, name_leg, type_chart_2, is_secondary=True, rgb_base=rgb_c2, op_name=op)
+                            fig.add_trace(trace2, secondary_y=True)
+            else:
+                item_aktif = sorted(df_aggregated[kolom_label].dropna().unique().tolist())
+                for i, item in enumerate(item_aktif):
+                    df_c = df_aggregated[df_aggregated[kolom_label] == item]
+                    if not df_c.empty:
+                        rgb_c2 = palette_kpi2_list[i % len(palette_kpi2_list)]
+                        trace2 = add_dynamic_trace(df_c, y_axis_2, f"{item} ({y_axis_2})", type_chart_2, is_secondary=True, rgb_base=rgb_c2)
+                        fig.add_trace(trace2, secondary_y=True)
+
+        # Garis Target - FIXED FORMAT TANGGAL
         if use_threshold_1 and kolom_date and start_date and end_date:
             start_str = f"{start_date.day}/{start_date.month}/{start_date.year}"
             end_str = f"{end_date.day}/{end_date.month}/{end_date.year}"
@@ -492,7 +562,7 @@ if uploaded_file is not None:
             end_str = f"{end_date.day}/{end_date.month}/{end_date.year}"
             fig.add_trace(go.Scatter(x=[start_str, end_str], y=[threshold_val_2, threshold_val_2], name=f"Target {y_axis_2}", mode="lines", line=dict(color="purple", width=2.5, dash="dot")), secondary_y=True)
 
-        judul_level = "Site Level" if is_site_level else "Cell Level"
+        judul_level = "Operator Level" if do_split_op else ("Site Level" if is_site_level else "Cell Level")
         judul_chart = f"Analisis Grafik KPI ({judul_level}): {y_axis_1} [{agg_1.upper()}]" + (f" vs {y_axis_2} [{agg_2.upper()}]" if has_kpi2 else "")
 
         fig.update_layout(
@@ -502,7 +572,7 @@ if uploaded_file is not None:
             margin=dict(l=110, r=65, t=110, b=260),
             showlegend=True,
             legend=dict(orientation="h", yanchor="top", y=-0.35, xanchor="center", x=0.5),
-            xaxis=dict(type='category') # <-- INI KUNCI BIAR TANGGAL DISCRETE
+            xaxis=dict(type='category')
         )
 
         st.markdown('<div class="chart-scroll-container">', unsafe_allow_html=True)
@@ -593,7 +663,7 @@ if uploaded_file is not None:
                         f'Delta_{y_axis_2}': '{:+.2f}',
                         f'Gain_{y_axis_2}': '{:+.1f}%'
                     } if has_kpi2 else {})
-                }).map(color_delta, subset=[f'Delta_{y_axis_1}', f'Gain_{y_axis_1}'])
+                                }).map(color_delta, subset=[f'Delta_{y_axis_1}', f'Gain_{y_axis_1}'])
 
                 if has_kpi2:
                     styled_df = styled_df.map(color_delta, subset=[f'Delta_{y_axis_2}', f'Gain_{y_axis_2}'])
