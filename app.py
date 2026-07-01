@@ -75,7 +75,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("📈 Dashboard And KPI Analysis")
+st.title("📈 Dashboard Analysis KPI")
 
 # 2. Fitur Upload File di Sidebar
 st.sidebar.header("📂 Sumber Data")
