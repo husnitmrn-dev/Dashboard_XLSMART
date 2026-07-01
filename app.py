@@ -219,7 +219,7 @@ if uploaded_file is not None:
     # ==================== SLICER BEFORE AFTER RENTANG ====================
     before_start, before_end, after_start, after_end = None, None, None, None
     if kolom_date:
-        st.markdown("#### 📅 Summary Before vs After")
+        st.markdown("#### 📅 Head to Head : Before vs After")
         col_b1, col_b2 = st.columns(2)
 
         total_days = (max_date - min_date).days
