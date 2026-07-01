@@ -37,7 +37,7 @@ st.markdown(
             padding-top: 0rem!important;
             padding-bottom: 0.2rem!important;
             margin-bottom: 0rem!important;
-            font-size: 64px!important;
+            font-size: 40px!important;
             text-align: center!important;
         }
 
