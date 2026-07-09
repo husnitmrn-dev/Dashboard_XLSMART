@@ -99,7 +99,7 @@ if uploaded_file is not None:
 
     # Auto-detect semua kolom penting
     kolom_band = detect_column(all_columns, ["band", "freq band", "frequency"])
-    kolom_Tower_ID = detect_column(all_columns, ["(4g enodeb fdd)msc", "Tower_ID", "enodeb", "site", "msc"])
+    kolom_Tower_ID = detect_column(all_columns, ["(4g enodeb fdd)msc", "Tower_ID", "enodeb", "tower", "msc"])
     kolom_moentity = detect_column(all_columns, ["moentity", "cellname", "cell", "cell name", "sector"])
     kolom_date = detect_column(all_columns, ["date", "tanggal", "tgl", "timestamp", "datetime", "time"])
     kolom_operator = detect_column(all_columns, ["operator", "op", "ope", "opr", "provider", "brand"], exact_match=True)
