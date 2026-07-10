@@ -335,7 +335,7 @@ if uploaded_file is not None:
     split_by_operator = False
     if kolom_operator:
         split_by_operator = st.sidebar.checkbox("Split Chart by Operator", value=False)
-
+    highlight_range = st.sidebar.checkbox("Highlight Before/After Range", value=False)
     use_threshold_2 = st.sidebar.checkbox("Aktifkan Garis Target KPI 2") if has_kpi2 else False
     threshold_val_2 = st.sidebar.number_input("Nilai Target KPI 2:", value=95.0 if "per" in str(y_axis_2).lower() or "%" in str(y_axis_2) else 0.0, step=1.0) if use_threshold_2 else None
 
@@ -550,6 +550,49 @@ if uploaded_file is not None:
 
         judul_level = "Operator Level" if do_split_op else ("Site Level" if is_site_level else "Cell Level")
         judul_chart = f"Analisis Grafik KPI ({judul_level}): {y_axis_1} [{agg_1.upper()}]" + (f" vs {y_axis_2} [{agg_2.upper()}]" if has_kpi2 else "")
+                # ==================== HIGHLIGHT KOTAK BEFORE AFTER ====================
+        if highlight_range and kolom_date and before_start and before_end and after_start and after_end:
+            # Convert tanggal ke format string chart: "1/10/2025"
+            before_start_str = f"{before_start.day}/{before_start.month}/{before_start.year}"
+            before_end_str = f"{before_end.day}/{before_end.month}/{before_end.year}"
+            after_start_str = f"{after_start.day}/{after_start.month}/{after_start.year}"
+            after_end_str = f"{after_end.day}/{after_end.month}/{after_end.year}"
+
+            # Kotak BEFORE - garis biru, no fill
+            fig.add_shape(
+                type="rect",
+                xref="x", yref="paper",
+                x0=before_start_str, x1=before_end_str,
+                y0=0, y1=1,
+                line=dict(color="blue", width=2, dash="dot"),
+                fillcolor="rgba(0,0,0,0)",  # No fill
+                layer="below"
+            )
+            # Label BEFORE
+            fig.add_annotation(
+                x=before_start_str, y=1.02, xref="x", yref="paper",
+                text="BEFORE", showarrow=False,
+                font=dict(color="blue", size=12, family="Arial Black"),
+                bgcolor="rgba(255,255,255,0.8)"
+            )
+
+            # Kotak AFTER - garis hijau, no fill
+            fig.add_shape(
+                type="rect",
+                xref="x", yref="paper",
+                x0=after_start_str, x1=after_end_str,
+                y0=0, y1=1,
+                line=dict(color="green", width=2, dash="dot"),
+                fillcolor="rgba(0,0,0,0)",  # No fill
+                layer="below"
+            )
+            # Label AFTER
+            fig.add_annotation(
+                x=after_start_str, y=1.02, xref="x", yref="paper",
+                text="AFTER", showarrow=False,
+                font=dict(color="green", size=12, family="Arial Black"),
+                bgcolor="rgba(255,255,255,0.8)"
+            )
 
         fig.update_layout(
             title_text=judul_chart,
@@ -560,7 +603,6 @@ if uploaded_file is not None:
             legend=dict(orientation="h", yanchor="top", y=-0.35, xanchor="center", x=0.5),
             xaxis=dict(type='category')
         )
-
         st.markdown('<div class="chart-scroll-container">', unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
