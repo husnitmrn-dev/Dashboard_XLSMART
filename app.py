@@ -127,7 +127,7 @@ if uploaded_file is not None:
         df[kolom_moentity] = df[kolom_moentity].astype(str).str.strip()
 
     # ==================== LOGIKA INTERKONEKSI SLICER ====================
-    if "Tower_ID_sel" not in st.session_state: st.session_state.Tower_ID_sel = "Select All"
+    if "Tower_ID_sel" not in st.session_state: st.session_state.Tower_ID_sel = ["Select All"]
     if "mo_sel" not in st.session_state: st.session_state.mo_sel = "Select All"
     if "band_sel" not in st.session_state: st.session_state.band_sel = ["Select All"]
     if "operator_sel" not in st.session_state: st.session_state.operator_sel = "Select All"
@@ -145,14 +145,22 @@ if uploaded_file is not None:
             df_for_Tower_ID = df_for_Tower_ID[df_for_Tower_ID[kolom_operator] == st.session_state.operator_sel]
 
         list_Tower_ID_unik = ["Select All"] + sorted(df_for_Tower_ID[kolom_Tower_ID].dropna().unique().tolist())
-        idx_Tower_ID = list_Tower_ID_unik.index(st.session_state.Tower_ID_sel) if st.session_state.Tower_ID_sel in list_Tower_ID_unik else 0
-        Tower_ID_terpilih = st.selectbox("Tower_ID / eNodeB", options=list_Tower_ID_unik, index=idx_Tower_ID, key="Tower_ID_sel")
+        
+        # Logic Select All buat multiselect
+        current_tower_sel = st.session_state.Tower_ID_sel
+        if len(current_tower_sel) > 1 and "Select All" in current_tower_sel:
+            if current_tower_sel[0] == "Select All":
+                st.session_state.Tower_ID_sel = [x for x in current_tower_sel if x!= "Select All"]
+            else:
+                st.session_state.Tower_ID_sel = ["Select All"]
+
+        Tower_ID_terpilih = st.multiselect("Tower_ID / eNodeB", options=list_Tower_ID_unik, key="Tower_ID_sel")
 
     with col2:
         if kolom_moentity:
             df_for_mo = df.copy()
-            if st.session_state.Tower_ID_sel!= "Select All":
-                df_for_mo = df_for_mo[df_for_mo[kolom_Tower_ID] == st.session_state.Tower_ID_sel]
+            if st.session_state.Tower_ID_sel and "Select All" not in st.session_state.Tower_ID_sel:
+                df_for_mo = df_for_mo[df_for_mo[kolom_Tower_ID].isin(st.session_state.Tower_ID_sel)]
             if st.session_state.band_sel and "Select All" not in st.session_state.band_sel:
                 df_for_mo = df_for_mo[df_for_mo[kolom_band].isin(st.session_state.band_sel)]
             if kolom_operator and st.session_state.operator_sel!= "Select All":
@@ -167,8 +175,8 @@ if uploaded_file is not None:
     with col3:
         if kolom_band:
             df_for_band = df.copy()
-            if st.session_state.Tower_ID_sel!= "Select All":
-                df_for_band = df_for_band[df_for_band[kolom_Tower_ID] == st.session_state.Tower_ID_sel]
+            if st.session_state.Tower_ID_sel and "Select All" not in st.session_state.Tower_ID_sel:
+                df_for_band = df_for_band[df_for_band[kolom_Tower_ID].isin(st.session_state.Tower_ID_sel)]
             if st.session_state.mo_sel!= "Select All":
                 df_for_band = df_for_band[df_for_band[kolom_moentity] == st.session_state.mo_sel]
             if kolom_operator and st.session_state.operator_sel!= "Select All":
@@ -191,8 +199,8 @@ if uploaded_file is not None:
         # SLICER OPERATOR
         if kolom_operator:
             df_for_op = df.copy()
-            if st.session_state.Tower_ID_sel!= "Select All":
-                df_for_op = df_for_op[df_for_op[kolom_Tower_ID] == st.session_state.Tower_ID_sel]
+            if st.session_state.Tower_ID_sel and "Select All" not in st.session_state.Tower_ID_sel:
+                df_for_op = df_for_op[df_for_op[kolom_Tower_ID].isin(st.session_state.Tower_ID_sel)]
             if st.session_state.mo_sel!= "Select All":
                 df_for_op = df_for_op[df_for_op[kolom_moentity] == st.session_state.mo_sel]
             if st.session_state.band_sel and "Select All" not in st.session_state.band_sel:
@@ -279,8 +287,8 @@ if uploaded_file is not None:
 
     # ==================== PROSES AKHIR FILTERING DATA ====================
     df_filtered = df.copy()
-    if Tower_ID_terpilih!= "Select All":
-        df_filtered = df_filtered[df_filtered[kolom_Tower_ID] == Tower_ID_terpilih]
+    if Tower_ID_terpilih and "Select All" not in Tower_ID_terpilih:
+        df_filtered = df_filtered[df_filtered[kolom_Tower_ID].isin(Tower_ID_terpilih)]
     if mo_terpilih!= "Select All":
         df_filtered = df_filtered[df_filtered[kolom_moentity] == mo_terpilih]
     if band_terpilih and "Select All" not in band_terpilih:
@@ -616,9 +624,9 @@ if uploaded_file is not None:
             df_before = df.copy()
             df_after = df.copy()
 
-            if Tower_ID_terpilih!= "Select All":
-                df_before = df_before[df_before[kolom_Tower_ID] == Tower_ID_terpilih]
-                df_after = df_after[df_after[kolom_Tower_ID] == Tower_ID_terpilih]
+            if Tower_ID_terpilih and "Select All" not in Tower_ID_terpilih:
+                df_before = df_before[df_before[kolom_Tower_ID].isin(Tower_ID_terpilih)]
+                df_after = df_after[df_after[kolom_Tower_ID].isin(Tower_ID_terpilih)]
             if mo_terpilih!= "Select All":
                 df_before = df_before[df_before[kolom_moentity] == mo_terpilih]
                 df_after = df_after[df_after[kolom_moentity] == mo_terpilih]
