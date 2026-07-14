@@ -8,52 +8,52 @@ import datetime
 # 1. Konfigurasi Halaman agar Luas Maksimal
 st.set_page_config(page_title="KPI Dashboard XLSMART", layout="wide")
 
-# --- CSS SAKTI V6: Title tengah + Slicer kecil ---
+# --- CSS SAKTI V7: 1 Layar + Metric Kecil ---
 st.markdown(
     """
     <style>
         html, body, [data-testid="stAppViewContainer"] {
-            overflow: hidden!important;
-            height: 100vh;
+            overflow: auto!important;
+            height: auto!important;
         }
-       .block-container {
-            padding-top: 0.2rem!important;
-            padding-bottom: 0rem!important;
-            padding-left: 1.5rem!important;
-            padding-right: 1.5rem!important;
+      .block-container {
+            padding-top: 0.5rem!important;
+            padding-bottom: 1rem!important;
+            padding-left: 1rem!important;
+            padding-right: 1rem!important;
             max-width: 100%!important;
         }
         [data-testid="stVerticalBlock"] {
-            gap: 0.15rem!important;
+            gap: 0.2rem!important;
         }
         h1 {
             padding-top: 0rem!important;
-            padding-bottom: 0.2rem!important;
+            padding-bottom: 0.3rem!important;
             margin-bottom: 0rem!important;
-            font-size: 40px!important;
+            font-size: 36px!important;
             text-align: center!important;
         }
-        h3 {
-            font-size: 18px!important;
-            margin-bottom: 0.3rem!important;
+        h3, h5 {
+            font-size: 16px!important;
+            margin-bottom: 0.2rem!important;
         }
         header[data-testid="stHeader"] {
             background-color: transparent!important;
-            height: 0.5rem!important;
+            height: 0rem!important;
         }
-       .main.block-container {
-            margin-top: -3.2rem!important;
+      .main.block-container {
+            margin-top: -1rem!important;
         }
         hr {
-            margin-top: 0.1rem!important;
-            margin-bottom: 0.1rem!important;
+            margin-top: 0.2rem!important;
+            margin-bottom: 0.2rem!important;
         }
-       .chart-scroll-container {
-            max-height: calc(100vh - 170px)!important;
-            overflow-y: auto!important;
-            overflow-x: hidden!important;
-            padding-right: 5px;
-            margin-top: -0.5rem!important;
+        [data-testid="stMetricValue"] {
+            font-size: 20px!important;
+        }
+        [data-testid="stMetricLabel"] {
+            font-size: 12px!important;
+            min-height: 30px!important;
         }
     </style>
     """,
@@ -100,7 +100,7 @@ if uploaded_file is not None:
     # Auto-detect semua kolom penting
     kolom_band = detect_column(all_columns, ["band", "freq band", "frequency"])
     kolom_Tower_ID = detect_column(all_columns, ["(4g enodeb fdd)msc", "Tower_ID", "enodeb", "tower", "msc"])
-    kolom_moentity = detect_column(all_columns, ["moentity", "cellname", "cell", "cell name", "sector"])
+    kolom_moentity = detect_column(all_columns, ["moentity", "cellname", "cell name", "sector"])
     kolom_date = detect_column(all_columns, ["date", "tanggal", "tgl", "timestamp", "datetime", "time"])
     kolom_operator = detect_column(all_columns, ["operator", "op", "ope", "opr", "provider", "brand"], exact_match=True)
 
@@ -118,7 +118,7 @@ if uploaded_file is not None:
         df[kolom_date] = df[kolom_date].dt.date
 
     if kolom_operator:
-        df[kolom_operator] = df[kolom_operator].astype(str).str.strip().str.upper() # Jadikan XL/SF bukan xl/sf
+        df[kolom_operator] = df[kolom_operator].astype(str).str.strip().str.upper()
 
     if kolom_Tower_ID:
         df[kolom_Tower_ID] = df[kolom_Tower_ID].astype(str).str.strip()
@@ -145,8 +145,7 @@ if uploaded_file is not None:
             df_for_Tower_ID = df_for_Tower_ID[df_for_Tower_ID[kolom_operator] == st.session_state.operator_sel]
 
         list_Tower_ID_unik = ["Select All"] + sorted(df_for_Tower_ID[kolom_Tower_ID].dropna().unique().tolist())
-        
-        # Logic Select All buat multiselect
+
         current_tower_sel = st.session_state.Tower_ID_sel
         if len(current_tower_sel) > 1 and "Select All" in current_tower_sel:
             if current_tower_sel[0] == "Select All":
@@ -196,7 +195,6 @@ if uploaded_file is not None:
             band_terpilih = ["Select All"]
 
     with col4:
-        # SLICER OPERATOR
         if kolom_operator:
             df_for_op = df.copy()
             if st.session_state.Tower_ID_sel and "Select All" not in st.session_state.Tower_ID_sel:
@@ -230,73 +228,6 @@ if uploaded_file is not None:
                 start_date = end_date = date_range[0]
             else:
                 start_date = end_date = date_range
-
-    # ==================== SLICER BEFORE AFTER RENTANG ====================
-    before_start, before_end, after_start, after_end = None, None, None, None
-    if kolom_date:
-        st.markdown("#### 📅 Head to Head : Before vs After")
-        col_b1, col_b2 = st.columns(2)
-
-        total_days = (max_date - min_date).days
-        if total_days >= 14:
-            default_before_end = min_date + datetime.timedelta(days=6)
-            default_before_start = min_date
-            default_after_start = min_date + datetime.timedelta(days=7)
-            default_after_end = min_date + datetime.timedelta(days=13)
-        elif total_days >= 2:
-            mid_point = min_date + datetime.timedelta(days=total_days // 2)
-            default_before_end = mid_point
-            default_before_start = min_date
-            default_after_start = mid_point + datetime.timedelta(days=1)
-            default_after_end = max_date
-        else:
-            default_before_start = default_before_end = min_date
-            default_after_start = default_after_end = max_date
-
-        with col_b1:
-            before_range = st.date_input(
-                "Rentang Tanggal BEFORE",
-                value=[default_before_start, default_before_end],
-                min_value=min_date,
-                max_value=max_date,
-                key="before_range"
-            )
-            if isinstance(before_range, (list, tuple)):
-                if len(before_range) == 2:
-                    before_start, before_end = before_range
-                elif len(before_range) == 1:
-                    before_start = before_end = before_range[0]
-            else:
-                before_start = before_end = before_range
-
-        with col_b2:
-            after_range = st.date_input(
-                "Rentang Tanggal AFTER",
-                value=[default_after_start, default_after_end],
-                min_value=min_date,
-                max_value=max_date,
-                key="after_range"
-            )
-            if isinstance(after_range, (list, tuple)):
-                if len(after_range) == 2:
-                    after_start, after_end = after_range
-                elif len(after_range) == 1:
-                    after_start = after_end = after_range[0]
-            else:
-                after_start = after_end = after_range
-
-    # ==================== PROSES AKHIR FILTERING DATA ====================
-    df_filtered = df.copy()
-    if Tower_ID_terpilih and "Select All" not in Tower_ID_terpilih:
-        df_filtered = df_filtered[df_filtered[kolom_Tower_ID].isin(Tower_ID_terpilih)]
-    if mo_terpilih!= "Select All":
-        df_filtered = df_filtered[df_filtered[kolom_moentity] == mo_terpilih]
-    if band_terpilih and "Select All" not in band_terpilih:
-        df_filtered = df_filtered[df_filtered[kolom_band].isin(band_terpilih)]
-    if kolom_operator and operator_terpilih!= "Select All":
-        df_filtered = df_filtered[df_filtered[kolom_operator] == operator_terpilih]
-    if kolom_date and start_date and end_date:
-        df_filtered = df_filtered[(df_filtered[kolom_date] >= start_date) & (df_filtered[kolom_date] <= end_date)]
 
     # ==================== PENGATURAN GRAFIK DI SIDEBAR + AGREGASI ====================
     st.sidebar.markdown("---")
@@ -347,43 +278,64 @@ if uploaded_file is not None:
     use_threshold_2 = st.sidebar.checkbox("Aktifkan Garis Target KPI 2") if has_kpi2 else False
     threshold_val_2 = st.sidebar.number_input("Nilai Target KPI 2:", value=95.0 if "per" in str(y_axis_2).lower() or "%" in str(y_axis_2) else 0.0, step=1.0) if use_threshold_2 else None
 
-    # ==================== INFO RINGKASAN PERFORMA (2 CARDS) ====================
-    if not df_filtered.empty and y_axis_1!= "-- Pilih KPI --":
-        st.markdown("### 📊 Summary KPI ")
-        m_col1, m_col2 = st.columns(2)
+    # ==================== PROSES AKHIR FILTERING DATA ====================
+    df_filtered = df.copy()
+    if Tower_ID_terpilih and "Select All" not in Tower_ID_terpilih:
+        df_filtered = df_filtered[df_filtered[kolom_Tower_ID].isin(Tower_ID_terpilih)]
+    if mo_terpilih!= "Select All":
+        df_filtered = df_filtered[df_filtered[kolom_moentity] == mo_terpilih]
+    if band_terpilih and "Select All" not in band_terpilih:
+        df_filtered = df_filtered[df_filtered[kolom_band].isin(band_terpilih)]
+    if kolom_operator and operator_terpilih!= "Select All":
+        df_filtered = df_filtered[df_filtered[kolom_operator] == operator_terpilih]
+    if kolom_date and start_date and end_date:
+        df_filtered = df_filtered[(df_filtered[kolom_date] >= start_date) & (df_filtered[kolom_date] <= end_date)]
 
-        if agg_1 == 'sum':
-            val_kpi1 = df_filtered[y_axis_1].sum()
-            label_1 = f"Total {y_axis_1}"
-        elif agg_1 == 'max':
-            val_kpi1 = df_filtered[y_axis_1].max()
-            label_1 = f"Maksimum {y_axis_1}"
-        elif agg_1 == 'min':
-            val_kpi1 = df_filtered[y_axis_1].min()
-            label_1 = f"Minimum {y_axis_1}"
-        else:
-            val_kpi1 = df_filtered[y_axis_1].mean()
-            label_1 = f"Rata-rata {y_axis_1}"
+    # ==================== HEAD TO HEAD + SUMMARY KPI SEJAJAR ====================
+    if kolom_date and not df_filtered.empty and y_axis_1!= "-- Pilih KPI --":
+        with st.container(border=True):
+            st.markdown("##### 📅 Before vs After + KPI Summary")
 
-        with m_col1:
-            st.metric(label=label_1, value=f"{val_kpi1:.2f}")
+            if agg_1 == 'sum': val_kpi1 = df_filtered[y_axis_1].sum()
+            elif agg_1 == 'max': val_kpi1 = df_filtered[y_axis_1].max()
+            elif agg_1 == 'min': val_kpi1 = df_filtered[y_axis_1].min()
+            else: val_kpi1 = df_filtered[y_axis_1].mean()
+            label_1 = f"{agg_1.upper()} {y_axis_1}"
 
-        if has_kpi2:
-            if agg_2 == 'sum':
-                val_kpi2 = df_filtered[y_axis_2].sum()
-                label_2 = f"Total {y_axis_2}"
-            elif agg_2 == 'max':
-                val_kpi2 = df_filtered[y_axis_2].max()
-                label_2 = f"Maksimum {y_axis_2}"
-            elif agg_2 == 'min':
-                val_kpi2 = df_filtered[y_axis_2].min()
-                label_2 = f"Minimum {y_axis_2}"
+            val_kpi2 = None
+            if has_kpi2:
+                if agg_2 == 'sum': val_kpi2 = df_filtered[y_axis_2].sum()
+                elif agg_2 == 'max': val_kpi2 = df_filtered[y_axis_2].max()
+                elif agg_2 == 'min': val_kpi2 = df_filtered[y_axis_2].min()
+                else: val_kpi2 = df_filtered[y_axis_2].mean()
+                label_2 = f"{agg_2.upper()} {y_axis_2}"
+
+            cols = st.columns([1.3, 1.3, 1, 1]) if has_kpi2 else st.columns([1.5, 1.5, 1])
+
+            total_days = (max_date - min_date).days
+            if total_days >= 14:
+                default_before_start, default_before_end = min_date, min_date + datetime.timedelta(days=6)
+                default_after_start, default_after_end = min_date + datetime.timedelta(days=7), min_date + datetime.timedelta(days=13)
             else:
-                val_kpi2 = df_filtered[y_axis_2].mean()
-                label_2 = f"Rata-rata {y_axis_2}"
+                default_before_start = default_before_end = min_date
+                default_after_start = default_after_end = max_date
 
-            with m_col2:
-                st.metric(label=label_2, value=f"{val_kpi2:.2f}")
+            with cols[0]:
+                before_range = st.date_input("BEFORE", value=[default_before_start, default_before_end], key="before_range")
+                before_start, before_end = before_range if len(before_range) == 2 else (before_range[0], before_range[0])
+
+            with cols[1]:
+                after_range = st.date_input("AFTER", value=[default_after_start, default_after_end], key="after_range")
+                after_start, after_end = after_range if len(after_range) == 2 else (after_range[0], after_range[0])
+
+            with cols[2]:
+                st.metric(label=label_1, value=f"{val_kpi1:,.2f}")
+
+            if has_kpi2:
+                with cols[3]:
+                    st.metric(label=label_2, value=f"{val_kpi2:,.2f}")
+    else:
+        before_start, before_end, after_start, after_end = None, None, None, None
 
     # ==================== RENDER CHART DYNAMICS ====================
     st.markdown("---")
@@ -415,7 +367,6 @@ if uploaded_file is not None:
                 cols_to_group = [x_axis, kolom_moentity]
                 kolom_label = kolom_moentity
 
-        # Agregasi data - NAMED AGGREGATION ANTI TABRAKAN
         agg_dict = {y_axis_1: agg_1}
         if has_kpi2:
             agg_dict[y_axis_2] = agg_2
@@ -423,33 +374,16 @@ if uploaded_file is not None:
         agg_named = {k: (k, v) for k, v in agg_dict.items()}
         df_aggregated = df_filtered.groupby(cols_to_group, as_index=False, group_keys=False).agg(**agg_named)
 
-        # ==================== REINDEX DATE SPINE - ANTI ERROR ====================
         if kolom_date and x_axis == kolom_date and start_date and end_date:
-            # Bikin date spine lengkap dulu
             all_dates = pd.date_range(start=start_date, end=end_date, freq='D').date
-            
-            # Kolom buat group selain tanggal
-            group_cols = [c for c in cols_to_group if c != x_axis]
-            
+            group_cols = [c for c in cols_to_group if c!= x_axis]
             if group_cols:
-                # Ambil kombinasi unik dari kolom group
                 unique_groups = df_aggregated[group_cols].drop_duplicates()
-                
-                # Cross join date spine dengan semua kombinasi group
                 date_df = pd.DataFrame({x_axis: all_dates})
                 full_index = date_df.merge(unique_groups, how='cross')
-                
-                # Merge sama data asli, tanggal bolong jadi NaN -> fill 0
-                df_aggregated = full_index.merge(
-                    df_aggregated, 
-                    on=cols_to_group, 
-                    how='left'
-                ).fillna({y_axis_1: 0, **({y_axis_2: 0} if has_kpi2 else {})})
+                df_aggregated = full_index.merge(df_aggregated, on=cols_to_group, how='left').fillna({y_axis_1: 0, **({y_axis_2: 0} if has_kpi2 else {})})
             else:
-                # Kalau ga ada group lain, reindex biasa
-                df_aggregated = df_aggregated.set_index(x_axis).reindex(all_dates).reset_index()
-                df_aggregated = df_aggregated.rename(columns={'index': x_axis}).fillna(0)
-
+                df_aggregated = df_aggregated.set_index(x_axis).reindex(all_dates).reset_index().rename(columns={'index': x_axis}).fillna(0)
 
         df_aggregated[y_axis_1] = df_aggregated[y_axis_1].fillna(0)
         if has_kpi2:
@@ -460,50 +394,20 @@ if uploaded_file is not None:
         if kolom_date and x_axis == kolom_date:
             df_aggregated[x_axis] = df_aggregated[x_axis].apply(lambda x: f"{x.day}/{x.month}/{x.year}")
 
-        max_val_1 = df_aggregated[y_axis_1].max() if not df_aggregated.empty else 100
-        max_val_2 = df_aggregated[y_axis_2].max() if (has_kpi2 and not df_aggregated.empty) else 0
-        global_max = max(max_val_1, max_val_2)
-
-        if use_threshold_1 and threshold_val_1 > global_max: global_max = threshold_val_1
-        if use_threshold_2 and threshold_val_2 > global_max: global_max = threshold_val_2
-        limit_y_upper = 105 if global_max <= 100 else global_max * 1.05
-
         palette_kpi1_list = ["31, 119, 180", "44, 160, 44", "148, 103, 189", "214, 39, 40", "158, 218, 229"]
         palette_kpi2_list = ["255, 127, 14", "227, 119, 194", "188, 189, 34", "23, 190, 207", "255, 187, 120"]
-
-        color_map = {
-            "xl": "0, 32, 96",
-            "sf": "227, 6, 19",
-        }
+        color_map = {"xl": "0, 32, 96", "sf": "227, 6, 19"}
 
         def add_dynamic_trace(df_c, y_col, name_legend, chart_type, is_secondary, rgb_base, op_name=None):
             if op_name and op_name.lower() in color_map:
                 rgb_base = color_map[op_name.lower()]
-
             if chart_type == "Line":
-                return go.Scatter(
-                    x=df_c[x_axis], y=df_c[y_col], name=name_legend, mode='lines',
-                    line=dict(color=f"rgb({rgb_base})", width=2.5),
-                    connectgaps=True,
-                    showlegend=True
-                )
+                return go.Scatter(x=df_c[x_axis], y=df_c[y_col], name=name_legend, mode='lines', line=dict(color=f"rgb({rgb_base})", width=2.5), connectgaps=True, showlegend=True)
             elif chart_type == "Bar":
                 opasitas = 0.50 if is_secondary else 0.80
-                return go.Bar(
-                    x=df_c[x_axis], y=df_c[y_col], name=name_legend,
-                    marker_color=f"rgb({rgb_base})", opacity=opasitas,
-                    showlegend=True
-                )
+                return go.Bar(x=df_c[x_axis], y=df_c[y_col], name=name_legend, marker_color=f"rgb({rgb_base})", opacity=opasitas, showlegend=True)
             elif chart_type == "Area":
-                return go.Scatter(
-                    x=df_c[x_axis], y=df_c[y_col], name=name_legend,
-                    mode='lines',
-                    line=dict(color=f"rgb({rgb_base})", width=2),
-                    fill='tozeroy',
-                    fillcolor=f"rgba({rgb_base}, 0.35)",
-                    connectgaps=True,
-                    showlegend=True
-                )
+                return go.Scatter(x=df_c[x_axis], y=df_c[y_col], name=name_legend, mode='lines', line=dict(color=f"rgb({rgb_base})", width=2), fill='tozeroy', fillcolor=f"rgba({rgb_base}, 0.35)", connectgaps=True, showlegend=True)
 
         if do_split_op:
             item_aktif_op = sorted(df_aggregated[kolom_operator].dropna().unique().tolist())
@@ -558,62 +462,27 @@ if uploaded_file is not None:
 
         judul_level = "Operator Level" if do_split_op else ("Site Level" if is_site_level else "Cell Level")
         judul_chart = f"Analisis Grafik KPI ({judul_level}): {y_axis_1} [{agg_1.upper()}]" + (f" vs {y_axis_2} [{agg_2.upper()}]" if has_kpi2 else "")
-                # ==================== HIGHLIGHT KOTAK BEFORE AFTER ====================
+
         if highlight_range and kolom_date and before_start and before_end and after_start and after_end:
-            # Convert tanggal ke format string chart: "1/10/2025"
             before_start_str = f"{before_start.day}/{before_start.month}/{before_start.year}"
             before_end_str = f"{before_end.day}/{before_end.month}/{before_end.year}"
             after_start_str = f"{after_start.day}/{after_start.month}/{after_start.year}"
             after_end_str = f"{after_end.day}/{after_end.month}/{after_end.year}"
-
-            # Kotak BEFORE - garis biru, no fill
-            fig.add_shape(
-                type="rect",
-                xref="x", yref="paper",
-                x0=before_start_str, x1=before_end_str,
-                y0=0, y1=1,
-                line=dict(color="blue", width=2, dash="dot"),
-                fillcolor="rgba(0,0,0,0)",  # No fill
-                layer="below"
-            )
-            # Label BEFORE
-            fig.add_annotation(
-                x=before_start_str, y=1.02, xref="x", yref="paper",
-                text="BEFORE", showarrow=False,
-                font=dict(color="blue", size=12, family="Arial Black"),
-                bgcolor="rgba(255,255,255,0.8)"
-            )
-
-            # Kotak AFTER - garis hijau, no fill
-            fig.add_shape(
-                type="rect",
-                xref="x", yref="paper",
-                x0=after_start_str, x1=after_end_str,
-                y0=0, y1=1,
-                line=dict(color="green", width=2, dash="dot"),
-                fillcolor="rgba(0,0,0,0)",  # No fill
-                layer="below"
-            )
-            # Label AFTER
-            fig.add_annotation(
-                x=after_start_str, y=1.02, xref="x", yref="paper",
-                text="AFTER", showarrow=False,
-                font=dict(color="green", size=12, family="Arial Black"),
-                bgcolor="rgba(255,255,255,0.8)"
-            )
+            fig.add_shape(type="rect", xref="x", yref="paper", x0=before_start_str, x1=before_end_str, y0=0, y1=1, line=dict(color="blue", width=2, dash="dot"), fillcolor="rgba(0,0,0,0)", layer="below")
+            fig.add_annotation(x=before_start_str, y=1.02, xref="x", yref="paper", text="BEFORE", showarrow=False, font=dict(color="blue", size=12, family="Arial Black"), bgcolor="rgba(255,255,0.8)")
+            fig.add_shape(type="rect", xref="x", yref="paper", x0=after_start_str, x1=after_end_str, y0=0, y1=1, line=dict(color="green", width=2, dash="dot"), fillcolor="rgba(0,0,0,0)", layer="below")
+            fig.add_annotation(x=after_start_str, y=1.02, xref="x", yref="paper", text="AFTER", showarrow=False, font=dict(color="green", size=12, family="Arial Black"), bgcolor="rgba(255,255,0.8)")
 
         fig.update_layout(
             title_text=judul_chart,
             hovermode="x unified",
-            height=680,
-            margin=dict(l=110, r=65, t=110, b=260),
+            height=450,
+            margin=dict(l=80, r=50, t=80, b=150),
             showlegend=True,
-            legend=dict(orientation="h", yanchor="top", y=-0.35, xanchor="center", x=0.5),
+            legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
             xaxis=dict(type='category')
         )
-        st.markdown('<div class="chart-scroll-container">', unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
         # ==================== TABEL PERBANDINGAN BEFORE AFTER RENTANG ====================
         if kolom_date and y_axis_1!= "-- Pilih KPI --" and before_start and before_end and after_start and after_end:
@@ -672,19 +541,17 @@ if uploaded_file is not None:
                     compare_df[f'Delta_{y_axis_2}'] = compare_df[f'{y_axis_2}_After'] - compare_df[f'{y_axis_2}_Before']
                     compare_df[f'Gain_{y_axis_2}'] = ((compare_df[f'{y_axis_2}_After'] - compare_df[f'{y_axis_2}_Before']) / compare_df[f'{y_axis_2}_After'].replace(0, pd.NA) * 100).fillna(0)
 
-                # Fungsi warna manual tanpa matplotlib
                 def color_delta(val):
                     color = 'green' if val > 0 else 'red' if val < 0 else 'gray'
                     return f'color: {color}; font-weight: bold'
 
-                # Format dict dipisah dulu biar ga error kurung
                 format_dict = {
                     f'{y_axis_1}_Before': '{:.2f}',
                     f'{y_axis_1}_After': '{:.2f}',
                     f'Delta_{y_axis_1}': '{:+.2f}',
                     f'Gain_{y_axis_1}': '{:+.1f}%'
                 }
-                
+
                 subset_cols = [f'Delta_{y_axis_1}', f'Gain_{y_axis_1}']
 
                 if has_kpi2:
@@ -696,7 +563,6 @@ if uploaded_file is not None:
                     })
                     subset_cols.extend([f'Delta_{y_axis_2}', f'Gain_{y_axis_2}'])
 
-                # Apply styling manual
                 styled_df = compare_df.style.format(format_dict).map(color_delta, subset=subset_cols)
 
                 st.dataframe(
